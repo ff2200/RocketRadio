@@ -40,7 +40,7 @@ uint8_t* buildRadioMesg(uint8_t* payload, size_t const in_len, size_t * const ou
   radioMsg[i++] = ETX;
 
   // build CRC
-  uint32_t crc = crc_string(radioMsg, i-1);
+  uint32_t crc = crc_string(radioMsg, i-1); // ETX is not in crc. change? yes/no?
   /*
   Serial.print("CRC: ");
   Serial.println(crc,HEX);
