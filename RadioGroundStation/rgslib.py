@@ -23,42 +23,39 @@ class MsgBuffer():
         if len(self._stack) > 0:
             yield self._stack.pop()
         else:
-            yield self._source.read()
+            yield self._source.read(1)
 
     def pushBack(self, x):
         self._stack.append(x)
 
 
 class TestMsg():
-    #TODO: unschoen, construct sollte in constructor sein, fehlerbhandlung ausserhalb, oder auslagerung in funktion
-    STUCTURE = struct.Struct('<xxxIffBxI')
+
+    STUCTURE = struct.Struct('<xxxIffBxI') # change x to real bytes , could make check format more object oriented
     RocketData = namedtuple('RocketData', 'len b a tick crc')
 
-    def __init__(self, clear_data):
-        self.clear_data = clear_data
-        self.msgvalid = False
-
-    def construct(self):
+    def construct(self,clear_data):
         try:
-            self.formatvalid = self.checkFormat()
-            self.data = self.RocketData._make(self.STUCTURE.unpack(self.clear_data)
-            self.crcvalid = self.checkCrc()
-            self.msgvalid = (self.crcvalid and self.formatvalid)
+            clear_data = clear_data
+            formatvalid = self.checkFormat(clear_data)
+            data = self.RocketData._make(self.STUCTURE.unpack(clear_data))
+            data.formatvalid = formatvalid
+            data.crcvalid = self.checkCrc(clear_data, data)
+            data.msgvalid = (data.crcvalid and data.formatvalid)
         except Exception:
-            self.msgvalid = False
             return None
-        else: return self
+        else: return self.data
 
-    def _checkFormat(self):
-        if CRTL_CHAR[self.clear_data[0]] != 'ESC': return False
-        if CRTL_CHAR[self.clear_data[1]] != 'ESC': return False
-        if CRTL_CHAR[self.clear_data[2]] != 'STX': return False
-        if CRTL_CHAR[self.clear_data[16]] != 'ETX': return False
+    def _checkFormat(self, clear_data):
+        if CRTL_CHAR[clear_data[0]] != 'ESC': return False
+        if CRTL_CHAR[clear_data[1]] != 'ESC': return False
+        if CRTL_CHAR[clear_data[2]] != 'STX': return False
+        if CRTL_CHAR[clear_data[16]] != 'ETX': return False
         return True
 
-    def _checkCrc(self):
-        msg_crc = crc32(self.clear_data(:-5))  # -4 for CRC , -1 for ETX BYTE (if ETX is in arduino included into CRC calculation , modify here)
-        return self.data == msg_crc
+    def _checkCrc(self, clear_data,ddata):
+        msg_crc = crc32(clear_data[:-5])  # -4 for CRC , -1 for ETX BYTE (if ETX is in arduino included into CRC calculation , modify here)
+        return data.crc == msg_crc
 
 
 def RecieveLoop():
@@ -93,7 +90,7 @@ def RecieveLoop():
                         raw_data.append(char)
                     else: break # if block finished
                 clear_data = cobs.decode(raw_data)
-                self.msgs.append(self._msgfac(clear_data).construct())
+                self.msgs.append(self._msgfac.construct(clear_data))
             except Exception as ex:
                 logging.error(ex)
 
