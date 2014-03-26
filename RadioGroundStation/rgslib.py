@@ -14,6 +14,15 @@ CRTL_CHAR = { 0x00: 'NUL', # Absolut termination of every message
              }
 
 
+class RgsLibException(Exception):
+    pass
+
+class FormatInvalidException(RgsLibException):
+    pass
+
+class CrcInvalidException(RgsLibException):
+    pass
+
 class MsgBuffer():
     def __init__(self, source: 'must implement read/close'):
         self._stack = []
@@ -21,13 +30,15 @@ class MsgBuffer():
 
     def getChar(self):
         if len(self._stack) > 0:
-            yield self._stack.pop()
+            return self._stack.pop()
         else:
-            yield self._source.read(1)
+            return  self._source.read(1)
 
     def pushBack(self, x):
         self._stack.append(x)
 
+    def _clearBuffer(self):
+        self._stack = []
 
 class TestMsg():
 
@@ -35,16 +46,12 @@ class TestMsg():
     RocketData = namedtuple('RocketData', 'len b a tick crc')
 
     def construct(self,clear_data):
-        try:
-            clear_data = clear_data
-            formatvalid = self.checkFormat(clear_data)
-            data = self.RocketData._make(self.STUCTURE.unpack(clear_data))
-            data.formatvalid = formatvalid
-            data.crcvalid = self.checkCrc(clear_data, data)
-            data.msgvalid = (data.crcvalid and data.formatvalid)
-        except Exception:
-            return None
-        else: return self.data
+        clear_data = clear_data
+        self._checkFormat(clear_data)
+        if not self._checkFormat(clear_data): raise FormatInvalidException()
+        data = self.RocketData._make(self.STUCTURE.unpack(clear_data))
+        if not self._checkCrc(clear_data, data.crc): raise CrcInvalidException()
+        return data
 
     def _checkFormat(self, clear_data):
         if CRTL_CHAR[clear_data[0]] != 'ESC': return False
@@ -53,46 +60,52 @@ class TestMsg():
         if CRTL_CHAR[clear_data[16]] != 'ETX': return False
         return True
 
-    def _checkCrc(self, clear_data,ddata):
+    def _checkCrc(self, clear_data, datacrc):
         msg_crc = crc32(clear_data[:-5])  # -4 for CRC , -1 for ETX BYTE (if ETX is in arduino included into CRC calculation , modify here)
-        return data.crc == msg_crc
+        return datacrc == msg_crc
 
 
-def RecieveLoop():
+class ReceiveLoop():
     MSG_BREAK = b'\x00'
-    def __init__(self,msgfac, msgbuffer):
+
+    def __init__(self, msgfac, msgbuffer):
         self._buffer =  msgbuffer
         self._msgfac = msgfac
         self.msgs = []
 
     def _sync(self):
+        # incooperate this into _read_block() ?
+        # and how to unittest ?
         while(1):
-            recv = next(self._buffer.getChar())
-            if (recv == MSG_BREAK):
-               break
+            recv = self._buffer.getChar()
+            if (recv == self.MSG_BREAK):
+                break
 
-    def _read_block():
-        char = yield from self._buffer.getChar()
-        if (char == MSG_BREAK):
+    def _read_block(self):
+        char = self._buffer.getChar()
+        if (char == self.MSG_BREAK or char == b''):
             self._buffer.pushBack(char)
             return None # finish block
-        yield ord(char) # get int code point of byte
+        return ord(char) # get int code point of byte
 
-    def start():
+    def start(self):
         while(1):
             try:
-                raw_data = bytearray()
-                clear_data = None
-
-                self._sync() # wait till wie get the break
-                for char in self._read_block():
-                    if char is not None:
-                        raw_data.append(char)
-                    else: break # if block finished
-                clear_data = cobs.decode(raw_data)
-                self.msgs.append(self._msgfac.construct(clear_data))
+                self.msgs.append(self._msgfac.construct(self._start_functionality()))
             except Exception as ex:
-                logging.error(ex)
+                #logging.error(ex)
+                raise ex
 
+    def _start_functionality(self):
+        raw_data = bytearray()
+        clear_data = None
 
-
+        self._sync() # wait till wie get the break
+        while(1):
+            char = self._read_block()
+            if char is not None:
+                raw_data.append(char)
+            else:
+                break # if block finished
+        clear_data = cobs.decode(raw_data)
+        return clear_data
