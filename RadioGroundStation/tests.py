@@ -101,7 +101,7 @@ class TestReceiveLoop(unittest.TestCase):
 
     def test_Start(self):
         self.bufferobj._clearBuffer()
-        self.bufferobj._source = io.BytesIO(b'\x00' + cobs.encode(self.testdata))
+        self.bufferobj._source = io.BytesIO(b'\x00' + cobs.encode(self.testdata) + b'\x00')
         factorymock = rgslib.TestMsg()
         factorymock.construct = mock.MagicMock()
         obj = rgslib.ReceiveLoop(factorymock, self.bufferobj)

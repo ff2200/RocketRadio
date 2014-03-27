@@ -29,10 +29,12 @@ class MsgBuffer():
         self._source = source
 
     def getChar(self):
+        char = ''
         if len(self._stack) > 0:
-            return self._stack.pop()
+            char = self._stack.pop()
         else:
-            return  self._source.read(1)
+            char = self._source.read(1)
+        return char
 
     def pushBack(self, x):
         self._stack.append(x)
@@ -46,7 +48,7 @@ class TestMsg():
     RocketData = namedtuple('RocketData', 'len b a tick crc')
 
     def construct(self,clear_data):
-        clear_data = clear_data
+        if clear_data is None: return None
         self._checkFormat(clear_data)
         if not self._checkFormat(clear_data): raise FormatInvalidException()
         data = self.RocketData._make(self.STUCTURE.unpack(clear_data))
@@ -82,16 +84,20 @@ class ReceiveLoop():
                 break
 
     def _read_block(self):
-        char = self._buffer.getChar()
-        if (char == self.MSG_BREAK or char == b''):
+        char = b''
+        while(char == b''): char = self._buffer.getChar()
+        if (char == self.MSG_BREAK): # should discard b'' completely?
             self._buffer.pushBack(char)
             return None # finish block
+
         return ord(char) # get int code point of byte
 
     def start(self):
         while(1):
             try:
-                self.msgs.append(self._msgfac.construct(self._start_functionality()))
+                data = self._msgfac.construct(self._start_functionality())
+                self.msgs.append(data)
+                yield data
             except Exception as ex:
                 #logging.error(ex)
                 raise ex
@@ -107,5 +113,19 @@ class ReceiveLoop():
                 raw_data.append(char)
             else:
                 break # if block finished
+        if (not len(raw_data) > 0): return None
         clear_data = cobs.decode(raw_data)
         return clear_data
+
+
+
+def receive(source:'must implement open/close'):
+    buffer = MsgBuffer(source)
+    factory = TestMsg()
+    mainLoop = ReceiveLoop(factory, buffer)
+    try:
+        for item in mainLoop.start():
+            yield item
+    except Exception as ex:
+        raise ex
+
