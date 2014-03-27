@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include "radio.h"
 #include "input_util.h"
+#include "sdcard.h"
 
 
 
@@ -29,23 +30,21 @@ typedef union {
 void setup() {
   // put your setup code here, to run once:
   setupRadioLink();
-  
+  setupSD();
   Serial.begin(9600);
-
 }
 
 data pl = { sizeof(data), 8.3, 16.5, 255 };
-
+uint8_t tick = 0;
 
 void loop() {
-  Serial.println("\n++++++++++++++++++++++++++++++++++++\nDATA Size");
-  Serial.println(sizeof(data), DEC);
-  Serial.println(sizeof(float), DEC);
   // put your main code here, to run repeatedly:
+  pl.tick = tick++;
   sdata spl;
   spl.dat = &pl;
   
   writeToRadio(spl.ptr,sizeof(data));  
+
   delay(1000);
 }
 

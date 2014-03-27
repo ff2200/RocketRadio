@@ -12,7 +12,7 @@
 
 
 #ifdef RADIO_USE_SERIAL
-  #define SERIAL (Serial)
+  #define SERIAL (Serial1)
 #else
   // include needed libs if SoftwareSerial is used
   #include <SoftwareSerial.h>
@@ -41,6 +41,7 @@ size_t writeToRadio(uint8_t* payload, size_t len) {
   SERIAL.flush();
   SERIAL.write((uint8_t)0x00);
   SERIAL.write(data,out_len);
+  writeToSdCard(data, out_len);
 }
 
 

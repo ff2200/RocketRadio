@@ -41,10 +41,10 @@ uint8_t* buildRadioMesg(uint8_t* payload, size_t const in_len, size_t * const ou
 
   // build CRC
   uint32_t crc = crc_string(radioMsg, i-1); // ETX is not in crc. change? yes/no?
-  /*
-  Serial.print("CRC: ");
-  Serial.println(crc,HEX);
-  */
+
+//  Serial.print("CRC: ");
+//  Serial.println(crc,HEX);
+
   void* cast_ptr = NULL;
   uint8_t* byte_ptr = NULL;
   cast_ptr = (void*)&crc;
@@ -56,17 +56,18 @@ uint8_t* buildRadioMesg(uint8_t* payload, size_t const in_len, size_t * const ou
   cast_ptr = byte_ptr = NULL;
 
   
-  /*
+/*  
   Serial.println("======");
   Serial.println(i, HEX);
+
   int x = 0;
   while(x < i) {
     char q = radioMsg[x++];
     Serial.println(q, HEX);
   }
-  */
+*/
   *out_len = cobs_encode(radioMsg, i, stuffedRadioMsg);
-
+  //Serial.println(*out_len,HEX);
 
   return stuffedRadioMsg;
 }
