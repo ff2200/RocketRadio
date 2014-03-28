@@ -2,7 +2,7 @@
 
 def main(file):
     from rgslib import receive
-    with open(args.file, 'rb') as source:
+    with open(file, 'rb') as source:
         for result in receive(source):
             print(result)
 
