@@ -1,3 +1,10 @@
+
+
+def main(source):
+    from rgslib import receive
+    for result in receive(source):
+        print(result)
+
 if __name__ == '__main__':
     import serial
     from argparse import ArgumentParser
@@ -8,8 +15,4 @@ if __name__ == '__main__':
 
     args = optp.parse_args()
     source = serial.Serial(args.port, args.baudrate)
-
-    from rgslib import receive
-
-    for result in receive(source):
-        print(result)
+    main(source)

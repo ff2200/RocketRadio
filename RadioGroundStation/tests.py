@@ -1,6 +1,5 @@
 
 import unittest
-import os
 import io
 from unittest import mock
 
@@ -44,18 +43,19 @@ class TestMsgBuffer(unittest.TestCase):
 
     def test_clearBuffer(self):
         obj = rgslib.MsgBuffer(None)
-        obj._stack = [1,2,3]
+        obj._stack = [1, 2, 3]
         obj._clearBuffer()
         self.assertTrue(len(obj._stack) == 0)
+
 
 class TestTestMsg(unittest.TestCase):
 
     def setUp(self):
         RocketData = namedtuple('RocketData', 'len b a tick crc')
-        self.testdata = struct.pack('<bbbIffB', 0x1B, 0x1B, 0x02,  1, 1.5 ,2.5 , 155 )
+        self.testdata = struct.pack('<bbbIffB', 0x1B, 0x1B, 0x02, 1, 1.5, 2.5, 155)
         self.crc = crc32(self.testdata)
-        self.testdata = struct.pack('<bbbIffBbI', 0x1B, 0x1B, 0x02,  1, 1.5 ,2.5 , 155, 0x03, self.crc)
-        self.testtuple = RocketData._make(struct.unpack('<xxxIffBxI',self.testdata))
+        self.testdata = struct.pack('<bbbIffBbI', 0x1B, 0x1B, 0x02, 1, 1.5, 2.5, 155, 0x03, self.crc)
+        self.testtuple = RocketData._make(struct.unpack('<xxxIffBxI', self.testdata))
 
     def test_checkFormat(self):
         obj = rgslib.TestMsg()
@@ -82,9 +82,9 @@ class TestTestMsg(unittest.TestCase):
 
 class TestReceiveLoop(unittest.TestCase):
     def setUp(self):
-        self.testdata = struct.pack('<bbbIffB', 0x1B, 0x1B, 0x02,  1, 1.5 ,2.5 , 155 )
+        self.testdata = struct.pack('<bbbIffB', 0x1B, 0x1B, 0x02, 1, 1.5, 2.5, 155)
         self.crc = crc32(self.testdata)
-        self.testdata = struct.pack('<bbbIffBbI', 0x1B, 0x1B, 0x02,  1, 1.5 ,2.5 , 155, 0x03, self.crc)
+        self.testdata = struct.pack('<bbbIffBbI', 0x1B, 0x1B, 0x02, 1, 1.5, 2.5, 155, 0x03, self.crc)
         self.bufferobj = rgslib.MsgBuffer(io.BytesIO())
         self.da = b'\x00' + cobs.encode(self.testdata)
 
@@ -108,7 +108,5 @@ class TestReceiveLoop(unittest.TestCase):
         self.assertTrue(obj._start_functionality() == self.testdata)
 
 
-
-
 if __name__ == '__main__':
-     unittest.main()
+    unittest.main()

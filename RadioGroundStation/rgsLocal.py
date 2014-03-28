@@ -1,3 +1,11 @@
+
+
+def main(file):
+    from rgslib import receive
+    with open(args.file, 'rb') as source:
+        for result in receive(source):
+            print(result)
+
 if __name__ == '__main__':
 
     from argparse import ArgumentParser
@@ -6,8 +14,4 @@ if __name__ == '__main__':
     optp.add_argument('file', type=str, help='file to open')
 
     args = optp.parse_args()
-
-    from rgslib import receive
-    with open(args.file, 'rb') as source:
-        for result in receive(source):
-            print(result)
+    main(args.file)
