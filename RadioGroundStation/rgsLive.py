@@ -2,8 +2,13 @@
 
 def main(source):
     from rgslib import receive
-    for result in receive(source):
-        print(result)
+    try:
+        for result in receive(source):
+            print(result)
+    except KeyboardInterrupt:
+        print('Shutdown...')
+    finally:
+        source.close()
 
 if __name__ == '__main__':
     import serial

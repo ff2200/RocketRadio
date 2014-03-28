@@ -3,8 +3,12 @@
 def main(file):
     from rgslib import receive
     with open(file, 'rb') as source:
-        for result in receive(source):
-            print(result)
+        try:
+            for result in receive(source):
+                print(result)
+        except KeyboardInterrupt:
+            print("Shutdown...")
+
 
 if __name__ == '__main__':
 
