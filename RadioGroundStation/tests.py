@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 
 import unittest
 import io
@@ -52,10 +53,13 @@ class TestTestMsg(unittest.TestCase):
 
     def setUp(self):
         RocketData = namedtuple('RocketData', 'len b a tick crc')
-        self.testdata = struct.pack('<bbbIffB', 0x1B, 0x1B, 0x02, 1, 1.5, 2.5, 155)
+        self.testdata = struct.pack('<bbbIffB', 0x1B, 0x1B, 0x02, 1, 1.5, 2.5,
+                                     155)
         self.crc = crc32(self.testdata)
-        self.testdata = struct.pack('<bbbIffBbI', 0x1B, 0x1B, 0x02, 1, 1.5, 2.5, 155, 0x03, self.crc)
-        self.testtuple = RocketData._make(struct.unpack('<xxxIffBxI', self.testdata))
+        self.testdata = struct.pack('<bbbIffBbI', 0x1B, 0x1B, 0x02, 1, 1.5, 2.5,
+                                     155, 0x03, self.crc)
+        self.testtuple = RocketData._make(struct.unpack('<xxxIffBxI',
+                                                         self.testdata))
 
     def test_checkFormat(self):
         obj = rgslib.TestMsg()
@@ -82,9 +86,11 @@ class TestTestMsg(unittest.TestCase):
 
 class TestReceiveLoop(unittest.TestCase):
     def setUp(self):
-        self.testdata = struct.pack('<bbbIffB', 0x1B, 0x1B, 0x02, 1, 1.5, 2.5, 155)
+        self.testdata = struct.pack('<bbbIffB', 0x1B, 0x1B, 0x02, 1, 1.5, 2.5,
+                                     155)
         self.crc = crc32(self.testdata)
-        self.testdata = struct.pack('<bbbIffBbI', 0x1B, 0x1B, 0x02, 1, 1.5, 2.5, 155, 0x03, self.crc)
+        self.testdata = struct.pack('<bbbIffBbI', 0x1B, 0x1B, 0x02, 1, 1.5, 2.5,
+                                     155, 0x03, self.crc)
         self.bufferobj = rgslib.MsgBuffer(io.BytesIO())
         self.da = b'\x00' + cobs.encode(self.testdata)
 
@@ -98,10 +104,10 @@ class TestReceiveLoop(unittest.TestCase):
         self.assertTrue(obj._read_block() == ord(b'\x03'))
         self.assertTrue(obj._read_block() is None)
 
-
     def test_Start(self):
         self.bufferobj._clearBuffer()
-        self.bufferobj._source = io.BytesIO(b'\x00' + cobs.encode(self.testdata) + b'\x00')
+        self.bufferobj._source = io.BytesIO(b'\x00' +
+                                           cobs.encode(self.testdata) + b'\x00')
         factorymock = rgslib.TestMsg()
         factorymock.construct = mock.MagicMock()
         obj = rgslib.ReceiveLoop(factorymock, self.bufferobj)
