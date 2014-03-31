@@ -69,9 +69,7 @@ class TestMsg():
         return True
 
     def _checkCrc(self, clear_data, datacrc):
-        # -4 for CRC , -1 for ETX BYTE (if ETX is in arduino included into CRC
-        # calculation , modify here)
-        msg_crc = crc32(clear_data[:-5])
+        msg_crc = crc32(clear_data[:-4])  # -4 for CRC
         return datacrc == msg_crc
 
 

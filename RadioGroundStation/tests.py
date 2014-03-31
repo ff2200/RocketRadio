@@ -53,8 +53,8 @@ class TestTestMsg(unittest.TestCase):
 
     def setUp(self):
         RocketData = namedtuple('RocketData', 'len b a tick crc')
-        self.testdata = struct.pack('<bbbIffB', 0x1B, 0x1B, 0x02, 1, 1.5, 2.5,
-                                     155)
+        self.testdata = struct.pack('<bbbIffBb', 0x1B, 0x1B, 0x02, 1, 1.5, 2.5,
+                                     155, 0x03)
         self.crc = crc32(self.testdata)
         self.testdata = struct.pack('<bbbIffBbI', 0x1B, 0x1B, 0x02, 1, 1.5, 2.5,
                                      155, 0x03, self.crc)
