@@ -2,7 +2,7 @@ import struct
 from collections import namedtuple
 from cobs import cobs
 from zlib import crc32
-
+from json import dumps
 
 CRTL_CHAR = { 0x00: 'NUL',  # Absolut termination of every message
               0x01: 'SOH',  # Start of every message -- NOT USED
@@ -49,7 +49,8 @@ class MsgBuffer():
 
 class TestMsg():
 
-    STUCTURE = struct.Struct('<xxxIffBxI')  # change x to real bytes , could make check format more object oriented
+    # change x to real bytes , could make check format more object oriented
+    STUCTURE = struct.Struct('<xxxIffBxI')
     RocketData = namedtuple('RocketData', 'len b a tick crc')
 
     def construct(self, clear_data):
@@ -68,17 +69,23 @@ class TestMsg():
         return True
 
     def _checkCrc(self, clear_data, datacrc):
-        msg_crc = crc32(clear_data[:-5])  # -4 for CRC , -1 for ETX BYTE (if ETX is in arduino included into CRC calculation , modify here)
+        # -4 for CRC , -1 for ETX BYTE (if ETX is in arduino included into CRC
+        # calculation , modify here)
+        msg_crc = crc32(clear_data[:-5])
         return datacrc == msg_crc
 
 
 class ReceiveLoop():
     MSG_BREAK = b'\x00'
 
-    def __init__(self, msgfac, msgbuffer):
+    def __init__(self, msgfac, msgbuffer, filelog_data=None,
+                 filelog_raw=None):
         self._buffer = msgbuffer
         self._msgfac = msgfac
         self.msgs = []
+        self.filelog_data = filelog_data
+        self.filelog_raw = filelog_raw
+        self._log_data_raw(self.MSG_BREAK)  # ensure correct beginning
 
     def _sync(self):
         # incooperate this into _read_block() ?
@@ -91,7 +98,8 @@ class ReceiveLoop():
     def _read_block(self):
         char = b''
         while(char == b''): char = self._buffer.getChar()
-        if (char == self.MSG_BREAK):  # should discard b'' completely?
+        self._log_data_raw(char)
+        if (char == self.MSG_BREAK):
             self._buffer.pushBack(char)
             return None  # finish block
 
@@ -102,9 +110,26 @@ class ReceiveLoop():
             try:
                 data = self._msgfac.construct(self._start_functionality())
                 self.msgs.append(data)
+                self._log_data_json(data)
                 yield data
             except Exception as ex:
                 #logging.error(ex)
+                raise ex
+
+    def _log_data_raw(self, char):
+        if self.filelog_raw is not None:
+            try:
+                self.filelog_raw.write(char)
+            except Exception as ex:
+                raise ex
+
+    def _log_data_json(self, data):
+        if self.filelog_data is not None and data is not None:
+            try:
+                # Note: can't use dump -> repeated calls to 'dump()' with same
+                # fp result in invalid JSON file (see documentation)
+                self.filelog_data.write(dumps(data._asdict()) + '\n')
+            except Exception as ex:
                 raise ex
 
     def _start_functionality(self):
@@ -123,10 +148,11 @@ class ReceiveLoop():
         return clear_data
 
 
-def receive(source: 'must implement open/close'):
+def receive(source: 'must implement open/close', filelog_data=None,
+            filelog_raw=None):
     buffer = MsgBuffer(source)
     factory = TestMsg()
-    mainLoop = ReceiveLoop(factory, buffer)
+    mainLoop = ReceiveLoop(factory, buffer, filelog_data, filelog_raw)
     try:
         for item in mainLoop.start():
             yield item
